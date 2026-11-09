@@ -1,0 +1,148 @@
+Wide World Importers - End-to-End Sales Performance Analytics & Diagnostic Study
+
+Project Overview
+
+This project delivers an end-to-end Business Intelligence solution for Wide World Importers, transforming raw transactional data into actionable strategic insights. The core objective extends beyond descriptive metrics to conduct a deep diagnostic analysis of sales trends, revenue trajectory, product dynamics, and customer retention patterns.
+
+The analytical workflow encompasses an enterprise-grade ETL process using Power Query, a Star Schema data model optimized for performance, complex DAX computations including Time-Intelligence functions, and an interactive dashboard built in Power BI.
+
+Business Problem & Diagnostic Hypothesis
+
+Primary Observed Issue
+
+While aggregate sales figures demonstrate absolute baseline growth year-over-year (reaching a baseline of 45M in 2013 and adding 4.9M in 2014), the net compound growth rate remains significantly below target capacity.
+
+Diagnostic Breakdown
+
+Product Level: Sales performance across Stock Items remains consistently positive with normal variance. Product performance is not the root cause of slow growth.
+Geographic Level: Regional distribution shows strong sales velocity, specifically within top-performing states such as Texas.
+Customer Retention (Root Cause): Longitudinal analysis of Top 10 customer cohorts reveals a high churn and drop-off rate. Top-tier accounts in 2013 experienced reduced purchasing volumes or disappeared entirely from top ranks in 2014 and 2015, replaced by new accounts rather than recurring organic expansion.
+Seasonal Volatility: MoM analysis highlights recurring revenue contractions during February and August (end of Q1 and Q3 transition), impacting momentum into subsequent quarters.
+Data Pipeline & ETL Architecture (Power Query)
+
+Fact Table Optimization (
+Fact_Sales)
+
+Header & Type Standardizations: Corrected initial structural misalignments and explicit data typing across all numeric and textual attributes.
+Tax Rate Normalization: Transformed Tax Rate values originally stored as whole numbers by applying integer-to-decimal transformation (Value / 100) and configuring explicit percentage data typing to enable accurate revenue calculations.
+2. Dimension Clean-up & Transformation
+
+Dim_StockItem: Standardized missing values by replacing n/a entries in color attributes with Unknown. Executed row filters to purge redundant metadata records.
+Dim_Customer: Applied advanced string extraction routines (Text After Delimiter) to eliminate redundant attributes shared across Customer, Bill To Customer, and Buying Group columns, resolving data duplication and ensuring dimensional uniqueness.
+Dim_City & Dim_Date: Purged unneeded records, standardized headers, and established primary surrogate key structures.
+Data Modeling Strategy
+
+The semantic layer is structured using a strict Star Schema centered around Fact_Sales to ensure optimized query execution and clear dimensional filtering pathways.
+
++-------------------+
+
+| Dim_Date |
+
++-------------------+
+
+| Date Key (PK) |
+
++---------+---------+
+
+|
+
++----------------+----------------+
+
+| (Active: Invoice Date) | (Inactive: Delivery Date)
+
+v v
+
++-------------------+ +-------------------+
+
+| Dim_Customer | | Fact_Sales |
+
++-------------------+ +-------------------+
+
+| Customer Key (PK) +-------------->| Customer Key (FK) |
+
++-------------------+ | Stock Item (FK) |
+
+| City Key (FK) |
+
++-------------------+ | Sales Amount |
+
+| Dim_StockItem | | Tax Amount |
+
++-------------------+ +---------+---------+
+
+| Stock Item (PK) +-------------------------+
+
++-------------------+ |
+
+v
+
++-------------------+ +-------------------+
+
+| Dim_City | | Dim_City |
+
++-------------------+ +-------------------+
+
+| City Key (PK) +-------------->| City Key (FK) |
+
++-------------------+ +-------------------+
+
+Handling Dual Date Roles
+
+To model both Invoice Date and Delivery Date without introducing circular relationships or redundant table duplicates:
+
+Active Relationship: Established between Dim_Date[Date] and Fact_Sales[InvoiceDate].
+Inactive Relationship: Established between Dim_Date[Date] and Fact_Sales[DeliveryDate].
+DAX Implementation: Leveraged the USERELATIONSHIP function within targeted measures to dynamically evaluate delivery performance without distorting standard invoice-based time intelligence.
+Key Performance Metrics & DAX Analytics
+
+Core KPIs Summary
+
+Total Sales: 172.3 M
+Gross Profit: 85.73 M
+Total Cost: 86.53 M
+Total Quantity Sold: 24 M
+Overall YoY Growth: 15%
+Key DAX Calculations (Sample Logic)
+
+Total Sales
+
+Total Sales = SUM(Fact_Sales[Sales_Amount])
+
+Gross Profit
+
+Gross Profit = [Total Sales] - SUM(Fact_Sales[Total_Cost])
+
+YoY Sales Growth (%)
+
+Sales YoY Growth % =
+
+VAR CurrentYearSales = [Total Sales]
+
+VAR PriorYearSales = CALCULATE([Total Sales], SAMEPERIODLASTYEAR(Dim_Date[Date]))
+
+RETURN
+
+DIVIDE(CurrentYearSales - PriorYearSales, PriorYearSales, 0)
+
+Delivery-Based Sales (Inactive Relationship Execution)
+
+Sales by Delivery Date =
+
+CALCULATE(
+
+[Total Sales],
+
+USERELATIONSHIP(Fact_Sales[Delivery_Date], Dim_Date[Date])
+
+)
+
+Strategic Recommendations
+
+Customer Retention Framework: Implement an account management strategy for high-value client cohorts. Address the decay rate of top-tier accounts to secure baseline recurring revenue.
+Mitigating Seasonal Dips: Design promotional campaigns targeted specifically at mid-Q1 (February) and mid-Q3 (August) to smooth out intra-year volatility.
+Geographic Scaling: Double down on successful expansion protocols currently driving strong yield in top regions like Texas, replicating these playbooks across lower-performing states.
+Technical Stack
+
+ETL & Data Transformation: Power Query (M Language)
+Data Modeling & Analytics: Power BI Desktop, DAX (Data Analysis Expressions)
+Architecture: Star Schema Methodology
